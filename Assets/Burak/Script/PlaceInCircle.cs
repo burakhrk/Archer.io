@@ -9,15 +9,27 @@ public class PlaceInCircle : MonoBehaviour
     //  public Vector2 minMaxRadius;
     public float RadiusMultiplier=0.8f;
      public float DotMoveTime=0.5f;
-    List<GameObject> _objList = new List<GameObject>();
-    SphereCollider circleCollider;
+    List<Dot> _objList = new List<Dot>();
+    CapsuleCollider circleCollider;
+
+   [SerializeField] GameManager gameManager;
+    DotController dotController;
+    
     private void Awake()
     {
-        circleCollider = GetComponent<SphereCollider>();
+        circleCollider = GetComponent<CapsuleCollider>();
+        dotController = GetComponent<DotController>();
+ 
+    }
+    private void Start()
+    {
+        Add(); 
     }
     void UpdateCircleCollider(float radius)
     {
         circleCollider.radius = radius;
+
+        dotController.UpdateList(_objList);
     }
 
     public void CreateObjects(Transform spawnPos)
@@ -25,7 +37,6 @@ public class PlaceInCircle : MonoBehaviour
         var remaining = numberOfObjects - _objList.Count;
          // var radius = Mathf.Lerp(minMaxRadius.x, minMaxRadius.y, percent);
          var radius = numberOfObjects*RadiusMultiplier;
-        UpdateCircleCollider(radius);
         for (int i = 0; i < remaining; i++)
         {
             GameObject obj;
@@ -38,7 +49,7 @@ public class PlaceInCircle : MonoBehaviour
                   obj = Instantiate(objectPrefab,transform);
             }
            
-            _objList.Add(obj);
+            _objList.Add(obj.GetComponent<Dot>());
         }
 
         for (int i = 0; i < _objList.Count; i++)
@@ -48,8 +59,14 @@ public class PlaceInCircle : MonoBehaviour
             Vector3 newPosition = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius + transform.position;
             obj.transform.SetParent(transform);
             var dot = obj.GetComponent<Dot>();
-            dot.PlaceInPos(newPosition, DotMoveTime);
+            dot.PlaceInPos(newPosition, DotMoveTime,transform.rotation.eulerAngles,dotController.groupMaterial);
         }
+
+
+        UpdateCircleCollider(radius);
+
+        if(gameObject.CompareTag("Player"))
+        gameManager.UpdatePlayerCount(numberOfObjects);
     }
     private void Update()
     {
@@ -72,6 +89,16 @@ public class PlaceInCircle : MonoBehaviour
     public void Add()
     {
         numberOfObjects++;
+        CreateObjects(null);
+    }
+
+    public void RemoveSpecific(Dot dot)
+    {
+        Debug.LogError(dot +" spe");
+        _objList.Remove(dot);
+         
+        Destroy(dot.gameObject);
+         numberOfObjects--;
         CreateObjects(null);
     }
 
